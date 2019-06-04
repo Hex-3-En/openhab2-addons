@@ -1,14 +1,10 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2018 by the respective copyright holders.
  *
- * See the NOTICE file(s) distributed with this work for additional
- * information.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0
- *
- * SPDX-License-Identifier: EPL-2.0
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  */
 package org.openhab.binding.deconz.internal.discovery;
 
@@ -27,7 +23,8 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.jupnp.model.meta.DeviceDetails;
 import org.jupnp.model.meta.RemoteDevice;
-import org.openhab.binding.deconz.internal.BindingConstants;
+import org.openhab.binding.deconz.internal.constants.Config;
+import org.openhab.binding.deconz.internal.constants.ThingType;
 import org.osgi.service.component.annotations.Component;
 
 /**
@@ -35,7 +32,8 @@ import org.osgi.service.component.annotations.Component;
  * and their REST API is compatible to HUE bridges. But they also provide a websocket
  * real-time channel for sensors.
  *
- * We check for the manufacturer string of "dresden elektronik".
+ * We check for the manufacturer url string of "www.dresden-elektronik.de", as the gateway declares itself as Philips
+ * Hue in most other details.
  *
  * @author David Graeff - Initial contribution
  */
@@ -45,7 +43,7 @@ public class BridgeDiscoveryParticipant implements UpnpDiscoveryParticipant {
 
     @Override
     public Set<ThingTypeUID> getSupportedThingTypeUIDs() {
-        return Collections.singleton(BindingConstants.BRIDGE_TYPE);
+        return Collections.singleton(ThingType.BRIDGE);
     }
 
     @Override
@@ -57,19 +55,13 @@ public class BridgeDiscoveryParticipant implements UpnpDiscoveryParticipant {
         URL descriptorURL = device.getIdentity().getDescriptorURL();
         String UDN = device.getIdentity().getUdn().getIdentifierString();
 
-        // Friendly name is like "name (host)"
-        String name = device.getDetails().getFriendlyName();
-        // Cut out the pure name
-        if (name.indexOf('(') - 1 > 0) {
-            name = name.substring(0, name.indexOf('(') - 1);
-        }
-        // Add host+port
-        String host = descriptorURL.getHost() + ":" + String.valueOf(descriptorURL.getPort());
-        name = name + " (" + host + ")";
+        String host = descriptorURL.getHost();
+        String name = "deCONZ @ " + device.getDetails().getFriendlyName();
 
         Map<String, Object> properties = new TreeMap<>();
 
-        properties.put(BindingConstants.CONFIG_HOST, host);
+        properties.put(Config.HOST, host);
+        properties.put(Config.PORT, descriptorURL.getPort());
 
         return DiscoveryResultBuilder.create(uid).withProperties(properties).withLabel(name)
                 .withRepresentationProperty(UDN).build();
@@ -79,8 +71,10 @@ public class BridgeDiscoveryParticipant implements UpnpDiscoveryParticipant {
     public @Nullable ThingUID getThingUID(RemoteDevice device) {
         DeviceDetails details = device.getDetails();
         if (details != null && details.getManufacturerDetails() != null
-                && "dresden elektronik".equals(details.getManufacturerDetails().getManufacturer())) {
-            return new ThingUID(BindingConstants.BRIDGE_TYPE, details.getSerialNumber());
+        // && "dresden elektronik".equals(details.getManufacturerDetails().getManufacturer())) {
+                && "www.dresden-elektronik.de"
+                        .equals(details.getManufacturerDetails().getManufacturerURI().getHost())) {
+            return new ThingUID(ThingType.BRIDGE, details.getSerialNumber());
         }
         return null;
     }

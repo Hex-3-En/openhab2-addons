@@ -1,24 +1,14 @@
 /**
- * Copyright (c) 2010-2019 Contributors to the openHAB project
+ * Copyright (c) 2010-2018 by the respective copyright holders.
  *
- * See the NOTICE file(s) distributed with this work for additional
- * information.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0
- *
- * SPDX-License-Identifier: EPL-2.0
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  */
 package org.openhab.binding.deconz.internal.discovery;
 
-import static org.openhab.binding.deconz.internal.BindingConstants.*;
-
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,8 +22,12 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerService;
-import org.openhab.binding.deconz.internal.dto.SensorMessage;
+import org.openhab.binding.deconz.internal.api.DeconzWebSocketDiscoveryListener;
+import org.openhab.binding.deconz.internal.api.contract.Light;
+import org.openhab.binding.deconz.internal.api.contract.Sensor;
+import org.openhab.binding.deconz.internal.constants.Binding;
 import org.openhab.binding.deconz.internal.handler.DeconzBridgeHandler;
+import org.osgi.service.component.annotations.Component;
 
 /**
  * Every bridge will add its discovered sensors to this discovery service to make them
@@ -42,75 +36,60 @@ import org.openhab.binding.deconz.internal.handler.DeconzBridgeHandler;
  * @author David Graeff - Initial contribution
  */
 @NonNullByDefault
-public class ThingDiscoveryService extends AbstractDiscoveryService implements DiscoveryService, ThingHandlerService {
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections
-            .unmodifiableSet(Stream.of(THING_TYPE_PRESENCE_SENSOR, THING_TYPE_DAYLIGHT_SENSOR, THING_TYPE_POWER_SENSOR,
-                    THING_TYPE_CONSUMPTION_SENSOR, THING_TYPE_LIGHT_SENSOR, THING_TYPE_TEMPERATURE_SENSOR,
-                    THING_TYPE_HUMIDITY_SENSOR, THING_TYPE_PRESSURE_SENSOR, THING_TYPE_SWITCH,
-                    THING_TYPE_OPENCLOSE_SENSOR, THING_TYPE_WATERLEAKAGE_SENSOR, THING_TYPE_ALARM_SENSOR,
-                    THING_TYPE_VIBRATION_SENSOR).collect(Collectors.toSet()));
+@Component(service = DiscoveryService.class, immediate = true)
+public class ThingDiscoveryService extends AbstractDiscoveryService
+        implements ThingHandlerService, DeconzWebSocketDiscoveryListener {
 
-    private @Nullable DeconzBridgeHandler handler;
-    private @Nullable ScheduledFuture<?> scanningJob;
+    private @NonNullByDefault({}) DeconzBridgeHandler handler;
 
     public ThingDiscoveryService() {
-        super(SUPPORTED_THING_TYPES_UIDS, 30);
+        super(Stream.of(Binding.THING_TYPE_PRESENCE_SENSOR, Binding.THING_TYPE_POWER_SENSOR,
+                Binding.THING_TYPE_DAYLIGHT_SENSOR, Binding.THING_TYPE_SWITCH, Binding.THING_TYPE_OPENCLOSE_SENSOR)
+                .collect(Collectors.toSet()), 0, true);
     }
 
+    /**
+     * Perform a new bridge full state request.
+     */
     @Override
     protected void startScan() {
-        handler.requestFullState();
+        // TODO whoooooooooooooooa
     }
 
     @Override
     protected void startBackgroundDiscovery() {
-        if (scanningJob == null || scanningJob.isCancelled()) {
-            scanningJob = scheduler.scheduleWithFixedDelay(this::startScan, 0, 5, TimeUnit.MINUTES);
-        }
+
     }
 
     @Override
     protected void stopBackgroundDiscovery() {
-        if (scanningJob != null && !scanningJob.isCancelled()) {
-            scanningJob.cancel(true);
-            scanningJob = null;
-        }
+
     }
 
     /**
      * Add a sensor device to the discovery inbox.
      *
-     * @param sensor The sensor description
+     * @param sensor    The sensor description
      * @param bridgeUID The bridge UID
      */
-    private void addDevice(String sensorID, SensorMessage sensor) {
+    private void addDevice(String sensorID, Sensor sensor) {
         ThingTypeUID thingTypeUID;
-        if (sensor.type.contains("Daylight")) { // deCONZ specific: Software simulated daylight sensor
-            thingTypeUID = THING_TYPE_DAYLIGHT_SENSOR;
+        if (sensor.type.contains("Daylight")) { // Deconz specific: Software simulated daylight sensor
+            thingTypeUID = Binding.THING_TYPE_DAYLIGHT_SENSOR;
         } else if (sensor.type.contains("Power")) { // ZHAPower, CLIPPower
-            thingTypeUID = THING_TYPE_POWER_SENSOR;
-        } else if (sensor.type.contains("ZHAConsumption")) { // ZHAConsumption
-            thingTypeUID = THING_TYPE_CONSUMPTION_SENSOR;
+            thingTypeUID = Binding.THING_TYPE_POWER_SENSOR;
         } else if (sensor.type.contains("Presence")) { // ZHAPresence, CLIPPrensence
-            thingTypeUID = THING_TYPE_PRESENCE_SENSOR;
+            thingTypeUID = Binding.THING_TYPE_PRESENCE_SENSOR;
         } else if (sensor.type.contains("Switch")) { // ZHASwitch
-            thingTypeUID = THING_TYPE_SWITCH;
+            thingTypeUID = Binding.THING_TYPE_SWITCH;
         } else if (sensor.type.contains("LightLevel")) { // ZHALightLevel
-            thingTypeUID = THING_TYPE_LIGHT_SENSOR;
+            thingTypeUID = Binding.THING_TYPE_LIGHT_SENSOR;
         } else if (sensor.type.contains("ZHATemperature")) { // ZHATemperature
-            thingTypeUID = THING_TYPE_TEMPERATURE_SENSOR;
+            thingTypeUID = Binding.THING_TYPE_TEMPERATURE_SENSOR;
         } else if (sensor.type.contains("ZHAHumidity")) { // ZHAHumidity
-            thingTypeUID = THING_TYPE_HUMIDITY_SENSOR;
-        } else if (sensor.type.contains("ZHAPressure")) { // ZHAPressure
-            thingTypeUID = THING_TYPE_PRESSURE_SENSOR;
+            thingTypeUID = Binding.THING_TYPE_HUMIDITY_SENSOR;
         } else if (sensor.type.contains("ZHAOpenClose")) { // ZHAOpenClose
-            thingTypeUID = THING_TYPE_OPENCLOSE_SENSOR;
-        } else if (sensor.type.contains("ZHAWater")) { // ZHAWater
-            thingTypeUID = THING_TYPE_WATERLEAKAGE_SENSOR;
-        } else if (sensor.type.contains("ZHAAlarm")) {
-            thingTypeUID = THING_TYPE_ALARM_SENSOR; // ZHAAlarm
-        } else if (sensor.type.contains("ZHAVibration")) {
-            thingTypeUID = THING_TYPE_VIBRATION_SENSOR; // ZHAVibration
+            thingTypeUID = Binding.THING_TYPE_OPENCLOSE_SENSOR;
         } else {
             return;
         }
@@ -126,24 +105,18 @@ public class ThingDiscoveryService extends AbstractDiscoveryService implements D
 
     @Override
     public void setThingHandler(@Nullable ThingHandler handler) {
-        if (handler instanceof DeconzBridgeHandler) {
-            this.handler = (DeconzBridgeHandler) handler;
-            this.handler.setDiscoveryService(this);
-        }
+        this.handler = (DeconzBridgeHandler) handler;
+        this.handler.setDiscoveryService(this);
     }
 
     @Override
-    public @Nullable ThingHandler getThingHandler() {
+    public ThingHandler getThingHandler() {
         return handler;
     }
 
     @Override
-    public void activate() {
-        super.activate(null);
-    }
-
-    @Override
     public void deactivate() {
+        removeOlderResults(getTimestampOfLastScan());
         super.deactivate();
     }
 
@@ -153,11 +126,35 @@ public class ThingDiscoveryService extends AbstractDiscoveryService implements D
      *
      * @param sensors The sensors or null.
      */
-    public void stateRequestFinished(@Nullable Map<String, SensorMessage> sensors) {
+    public void stateRequestFinished(@Nullable Map<String, Sensor> sensors) {
         stopScan();
         removeOlderResults(getTimestampOfLastScan());
         if (sensors != null) {
             sensors.forEach(this::addDevice);
         }
+    }
+
+    @Override
+    public void sensorResourceAdded(Sensor sensor) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void sensorResourceDeleted(Sensor sensor) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void lightResourceAdded(Light light) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void lightResourceDeleted(Light light) {
+        // TODO Auto-generated method stub
+
     }
 }

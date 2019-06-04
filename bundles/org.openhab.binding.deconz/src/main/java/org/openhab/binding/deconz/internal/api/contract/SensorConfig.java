@@ -6,22 +6,25 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.deconz.internal.handler;
+package org.openhab.binding.deconz.internal.api.contract;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link DeconzBridgeConfig} class holds the configuration properties of the bridge.
+ * The {@link SensorConfig} is send by the the Rest API.
+ * It is part of a {@link Sensor}.
+ *
  *
  * @author David Graeff - Initial contribution
  */
 @NonNullByDefault
-public class DeconzBridgeConfig {
-    // public String username = "";
-    @Nullable
-    String apikey;
-    String host = "localhost";
-    int port = 80;
-    int websocketport = 0;
+public interface SensorConfig {
+    public @Nullable Boolean on();
+
+    public @Nullable Boolean reachable();
+
+    public @Nullable Integer battery();
+
+    public @Nullable Integer temperature();
 }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="deconz"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+	<bridge-type id="deconz">
+		<label>Deconz</label>
+		<description>A running deCONZ software instance</description>
+		<channels>
+            <channel typeId="realtime" id="realtime"></channel>
+        </channels>
+		<!-- <config-description>
+		    <parameter name="username" type="text" required="false">
+                <label>Username</label>
+                <description>(NOT YET IMPLEMENTED)Username to use in case you want to use the alternative authorization method of username/password</description>
+            </parameter>
+		</config-description> -->
+	</bridge-type>
+	
+	<channel-type id="realtime">
+        <item-type>Switch</item-type>
+        <label>Realtime</label>
+        <description>Indicates that (almost) realtime events are received. If false, the backup method of polling is used.</description>
+        <state readOnly="true"></state>
+    </channel-type>
+    <channel-type id="user-notification">
+        <item-type>String</item-type>
+        <label>Notification</label>
+        <description>Shows the latest message the binding sent to the user</description>
+        <state readOnly="true"></state>
+    </channel-type>
+</thing:thing-descriptions>

@@ -39,6 +39,10 @@ import org.openhab.binding.deconz.internal.api.SensorWebSocket;
 import org.openhab.binding.deconz.internal.api.contract.Sensor;
 import org.openhab.binding.deconz.internal.api.contract.SensorState;
 import org.openhab.binding.deconz.internal.constants.Binding;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
 
 /**
  * This sensor Thing doesn't establish any connections, that is done by the bridge Thing.
@@ -55,8 +59,16 @@ import org.openhab.binding.deconz.internal.constants.Binding;
  * @author David Graeff - Initial contribution
  */
 @NonNullByDefault
-public class SensorThingHandler extends DeviceThingHandler {
-    public SensorThingHandler(Thing thing) {
+public class ActuatorThingHandler extends DeviceThingHandler {
+    private final Logger logger = LoggerFactory.getLogger(ActuatorThingHandler.class);
+    private DeviceThingConfig config = new DeviceThingConfig();
+    private final Gson gson = new Gson();
+    /** The sensor state. Contains all possible fields for all supported sensors and switches */
+    private SensorState state = new SensorState();
+    /** Prevent a dispose/init cycle while this flag is set. Use for property updates */
+    private boolean ignoreConfigurationUpdate;
+
+    public ActuatorThingHandler(Thing thing) {
         super(thing);
     }
 

@@ -9,19 +9,13 @@
 package org.openhab.binding.deconz.internal.handler;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link DeconzBridgeConfig} class holds the configuration properties of the bridge.
+ * The {@link DeviceThingConfig} class holds the configuration properties of a sensor Thing.
  *
  * @author David Graeff - Initial contribution
  */
 @NonNullByDefault
-public class DeconzBridgeConfig {
-    // public String username = "";
-    @Nullable
-    String apikey;
-    String host = "localhost";
-    int port = 80;
-    int websocketport = 0;
+public class DeviceThingConfig {
+    String id = "";
 }
